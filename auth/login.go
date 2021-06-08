@@ -88,7 +88,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			user.Roll,
 			user.Role,
 			jwt.StandardClaims{
-				ExpiresAt: time.Now().Add(time.Minute * 1).Unix(),
+				ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 			},
 		}
 		tokenString, err := JWT(claims)

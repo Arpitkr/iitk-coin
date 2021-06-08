@@ -64,6 +64,13 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		//Add data to database. Role is assigned NULL at the time of signup.
 		query, err := database.Prepare("INSERT INTO User(Roll, Name, Email, Password, Role) VALUES(?,?,?,?,NULL)")
 		CheckError(err)
-		_, err = query.Exec(user.Roll, user.Name, user.Email, user.Password)
+		tx, err := database.Begin()
+		CheckError(err)
+		_, err = tx.Stmt(query).Exec(user.Roll, user.Name, user.Email, user.Password)
+		if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
 	}
 }
