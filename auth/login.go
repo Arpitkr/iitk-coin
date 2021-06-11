@@ -3,7 +3,6 @@ package auth
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -54,13 +53,22 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		//Opening database
 		database, err := sql.Open("sqlite3", "../Info.db")
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
 
 		query, err := database.Prepare("SELECT * FROM User WHERE Email = ?")
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
 
 		rows, err := query.Query(cred.Email)
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
 
 		//Check if User present in database
 		if !rows.Next() {
@@ -93,7 +101,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 		tokenString, err := JWT(claims)
 		if err != nil {
-			log.Fatal(err)
+			SetError(w, err)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(tokenString)

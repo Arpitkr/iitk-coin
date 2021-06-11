@@ -3,6 +3,7 @@ package auth
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -17,23 +18,34 @@ type User struct {
 	Role     string `json:"role"`
 }
 
-func CheckError(err error) {
-	if err != nil {
-		panic(err)
-	}
+func SetError(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Header().Set("Content-type", "json")
+	json.NewEncoder(w).Encode("Internal server error")
+	log.Print(err)
 }
 
 func Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		//Open databse present in root directory
 		database, err := sql.Open("sqlite3", "../Info.db")
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
 
 		//Create table if it does not exist
 		table, err := database.Prepare("CREATE TABLE IF NOT EXISTS User(Roll INTEGER, Name VARCHAR(25), Email VARCHAR(100), Password VARCHAR(200), Role VARCHAR(15)) ")
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
+
 		_, err = table.Exec()
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
 
 		//Reading data from request body. Role field of request body will be nil. Role will be assigned by another end point.
 		var user User
@@ -47,10 +59,19 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 		//Checking if user already exists in database
 		data, err := database.Prepare("SELECT * FROM User WHERE Email = ?")
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
+
 		rows, err := data.Query(user.Email)
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
+
 		if rows.Next() {
+			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-type", "json")
 			json.NewEncoder(w).Encode("This email is already in use")
 			return
@@ -58,14 +79,26 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 		//GenerateHashedPassword
 		passwd, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
+
 		user.Password = string(passwd)
 
 		//Add data to database. Role is assigned NULL at the time of signup.
 		query, err := database.Prepare("INSERT INTO User(Roll, Name, Email, Password, Role) VALUES(?,?,?,?,NULL)")
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
+
 		tx, err := database.Begin()
-		CheckError(err)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
+
 		_, err = tx.Stmt(query).Exec(user.Roll, user.Name, user.Email, user.Password)
 		if err != nil {
 			tx.Rollback()
