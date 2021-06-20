@@ -45,7 +45,7 @@ func AwardCoin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//Check if roll exists in database
-		if !CheckRoll(MyDB, user.Roll, w) {
+		if !CheckRoll(user.Roll, w) {
 			return
 		}
 
