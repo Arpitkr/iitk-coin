@@ -1,7 +1,6 @@
 package coins
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,8 +15,8 @@ type transfer struct {
 	Coins    int `json:"coins"`
 }
 
-func CheckRoll(db *sql.DB, roll int, w http.ResponseWriter) bool {
-	rows, err := db.Query("Select * from User where Roll = ?", roll)
+func CheckRoll(roll int, w http.ResponseWriter) bool {
+	rows, err := MyDB.Query("Select * from User where Roll = ?", roll)
 	if err != nil {
 		SetError(w, err)
 		return false
@@ -61,12 +60,12 @@ func TransferCoin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//Check if Roll1 exists in database
-		if !CheckRoll(MyDB, trans.FromRoll, w) {
+		if !CheckRoll(trans.FromRoll, w) {
 			return
 		}
 
 		//Check if Roll2 exists in database
-		if !CheckRoll(MyDB, trans.ToRoll, w) {
+		if !CheckRoll(trans.ToRoll, w) {
 			return
 		}
 
