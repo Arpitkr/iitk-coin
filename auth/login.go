@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -51,14 +50,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		//Opening database
-		database, err := sql.Open("sqlite3", "../Info.db")
-		if err != nil {
-			SetError(w, err)
-			return
-		}
-
-		query, err := database.Prepare("SELECT * FROM User WHERE Email = ?")
+		query, err := MyDB.Prepare("SELECT * FROM User WHERE Email = ?")
 		if err != nil {
 			SetError(w, err)
 			return
@@ -79,8 +71,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		//Authenticate Password
 		var user User
-		rows.Scan(&user.Roll, &user.Name, &user.Email, &user.Password, &user.Role)
+		rows.Scan(&user.Roll, &user.Name, &user.Email, &user.Password, &user.Role, &user.Coins)
 		check := checkHashPassword(user.Password, cred.Password)
+		rows.Close()
 
 		//Return Invalid password if password not authenticated
 		if !check {

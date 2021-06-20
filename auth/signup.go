@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Arpitkr/iitk-coin/coins"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var MyDB *sql.DB
 
 type User struct {
 	Name     string `json:"name"`
@@ -16,6 +19,7 @@ type User struct {
 	Email    string `json:"email"`
 	Password string `json:"passwd"`
 	Role     string `json:"role"`
+	Coins    int    `json:"coins"`
 }
 
 func SetError(w http.ResponseWriter, err error) {
@@ -27,15 +31,9 @@ func SetError(w http.ResponseWriter, err error) {
 
 func Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		//Open databse present in root directory
-		database, err := sql.Open("sqlite3", "../Info.db")
-		if err != nil {
-			SetError(w, err)
-			return
-		}
 
 		//Create table if it does not exist
-		table, err := database.Prepare("CREATE TABLE IF NOT EXISTS User(Roll INTEGER, Name VARCHAR(25), Email VARCHAR(100), Password VARCHAR(200), Role VARCHAR(15)) ")
+		table, err := MyDB.Prepare("CREATE TABLE IF NOT EXISTS User(Roll INTEGER PRIMARY KEY, Name VARCHAR(25), Email VARCHAR(100), Password VARCHAR(200), Role VARCHAR(15), Coins INTEGER DEFAULT 0) ")
 		if err != nil {
 			SetError(w, err)
 			return
@@ -58,7 +56,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//Checking if user already exists in database
-		data, err := database.Prepare("SELECT * FROM User WHERE Email = ?")
+		data, err := MyDB.Prepare("SELECT * FROM User WHERE Email = ?")
 		if err != nil {
 			SetError(w, err)
 			return
@@ -87,13 +85,14 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		user.Password = string(passwd)
 
 		//Add data to database. Role is assigned NULL at the time of signup.
-		query, err := database.Prepare("INSERT INTO User(Roll, Name, Email, Password, Role) VALUES(?,?,?,?,NULL)")
+		query, err := MyDB.Prepare("INSERT INTO User(Roll, Name, Email, Password, Role) VALUES(?,?,?,?,NULL)")
 		if err != nil {
 			SetError(w, err)
 			return
 		}
 
-		tx, err := database.Begin()
+		coins.Mutex.Lock()
+		tx, err := MyDB.Begin()
 		if err != nil {
 			SetError(w, err)
 			return
@@ -101,9 +100,11 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 		_, err = tx.Stmt(query).Exec(user.Roll, user.Name, user.Email, user.Password)
 		if err != nil {
+			SetError(w, err)
 			tx.Rollback()
 		} else {
 			tx.Commit()
 		}
+		coins.Mutex.Unlock()
 	}
 }
