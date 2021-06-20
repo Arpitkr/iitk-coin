@@ -25,7 +25,7 @@ func GetCoins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Check if Roll number exists in database
-	if !CheckRoll(MyDB, rs.R, w) {
+	if !CheckRoll(rs.R, w) {
 		return
 	}
 
