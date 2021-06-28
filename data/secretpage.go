@@ -47,7 +47,7 @@ func Secret(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//if role is admin, display secret message
-	if claims.Role == "admin" {
+	if claims.IsAdmin {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode("Authorized : " + secretMessage())
 		return

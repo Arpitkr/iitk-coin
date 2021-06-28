@@ -13,6 +13,8 @@ import (
 )
 
 var MyDB *sql.DB
+var TransferDB *sql.DB
+var AwardDB *sql.DB
 
 func handleRequest() {
 	//Adding handler functions for different end points
@@ -36,5 +38,13 @@ func main() {
 	}
 	auth.MyDB = MyDB
 	coins.MyDB = MyDB
+	_, err = MyDB.Exec("Create table If not exists TransferHistory(Sender Integer, Receiver Int, SentAmount Float, ReceivedAmount Float, Tax Float, Timestamp varchar(20))")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = MyDB.Exec("Create table If not exists RewardHistory(Receiver Int, ReceivedAmount Float, Timestamp varchar(20))")
+	if err != nil {
+		log.Fatal(err)
+	}
 	handleRequest()
 }
