@@ -13,9 +13,10 @@ import (
 var Key string = "SomeSecret"
 
 type Claims struct {
-	Name string `json:"name"`
-	Roll int    `json:"roll"`
-	Role string `json:"role"`
+	Name          string `json:"name"`
+	Roll          int    `json:"roll"`
+	IsAdmin       bool   `json:"isAdmin"`
+	IsCoordinator bool   `json:"isCoordinator"`
 	jwt.StandardClaims
 }
 
@@ -71,7 +72,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		//Authenticate Password
 		var user User
-		rows.Scan(&user.Roll, &user.Name, &user.Email, &user.Password, &user.Role, &user.Coins)
+		err = rows.Scan(&user.Roll, &user.Name, &user.Email, &user.Password, &user.IsAdmin, &user.IsCoordinator, &user.Coins)
+		if err != nil {
+			SetError(w, err)
+			return
+		}
 		check := checkHashPassword(user.Password, cred.Password)
 		rows.Close()
 
@@ -87,7 +92,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		claims := &Claims{
 			user.Name,
 			user.Roll,
-			user.Role,
+			user.IsAdmin,
+			user.IsCoordinator,
 			jwt.StandardClaims{
 				ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 			},
