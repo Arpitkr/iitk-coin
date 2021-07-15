@@ -94,6 +94,7 @@ func TransferCoin(w http.ResponseWriter, r *http.Request) {
 		tx, err := MyDB.Begin()
 		if err != nil {
 			SetError(w, err)
+			tx.Rollback()
 			Mutex.Unlock()
 			return
 		}
@@ -104,7 +105,7 @@ func TransferCoin(w http.ResponseWriter, r *http.Request) {
 		//Check if there is an error in updation or balance is less than transfer amount
 		if err != nil {
 			SetError(w, err)
-			json.NewEncoder(w).Encode("Transaction aborted 1. Amount not updated.")
+			json.NewEncoder(w).Encode("Transaction aborted. Amount not updated.")
 			tx.Rollback()
 			Mutex.Unlock()
 			return
@@ -130,7 +131,7 @@ func TransferCoin(w http.ResponseWriter, r *http.Request) {
 		res, err = tx.Exec("UPDATE User SET Coins = Coins + ? WHERE Roll = ? And Coins + ? <1000", received, trans.ToRoll, received)
 		if err != nil {
 			SetError(w, err)
-			json.NewEncoder(w).Encode("Transaction aborted 2. Amount not updated.")
+			json.NewEncoder(w).Encode("Transaction aborted. Amount not updated.")
 			tx.Rollback()
 			Mutex.Unlock()
 			return
@@ -144,7 +145,7 @@ func TransferCoin(w http.ResponseWriter, r *http.Request) {
 			_, err = tx.Exec("Insert into TransferHistory values(?,?,?,?,?,datetime('now','localtime'))", trans.FromRoll, trans.ToRoll, trans.Coins, received, tax)
 			if err != nil {
 				SetError(w, err)
-				json.NewEncoder(w).Encode("Transaction aborted 3. Amount not updated.")
+				json.NewEncoder(w).Encode("Transaction aborted. Amount not updated.")
 				tx.Rollback()
 			} else {
 				w.Header().Set("Content-type", "json")

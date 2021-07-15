@@ -27,7 +27,7 @@ func VerifyJwt(w http.ResponseWriter, r *http.Request) (bool, Claims) {
 	if token, ok := r.Header["Authorization"]; !ok || token == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode("JWT not set")
+		json.NewEncoder(w).Encode("User not logged in")
 		return false, claims
 	}
 
@@ -39,7 +39,7 @@ func VerifyJwt(w http.ResponseWriter, r *http.Request) (bool, Claims) {
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode("Invalid JWT")
+		json.NewEncoder(w).Encode("Invalid User")
 		log.Println(err)
 		return false, claims
 	} else {
